@@ -7,7 +7,7 @@ RUN apk add mariadb-dev
 
 WORKDIR /code
 ADD . /code/
-ADD /root/.cache/pip /root/.cache/pip
+ADD .cache/pip /root/.cache/pip
 RUN pip install --upgrade pip
 RUN pip install -r requirements.txt
 
