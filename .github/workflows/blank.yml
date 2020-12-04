@@ -11,28 +11,6 @@ jobs:
     runs-on: ubuntu-18.04
     timeout-minutes: 900
 
-    steps:
-      - uses: actions/checkout@v2
-      - name: Set up Python 3.7
-        uses: actions/setup-python@v2
-        with:
-          python-version: 3.7
-      - name: Cache pip
-        uses: actions/cache@v2
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
-            ${{ runner.os }}-
-      - name: Install dependencies
-        run: pip install -r requirements.txt
-      - name: Archive Pip Cache
-        uses: actions/upload-artifact@v2
-        with:
-          name: cache-pip
-          path: ~/.cache/pip
-
   build-and-deploy:
     needs: make-cache
 
@@ -42,12 +20,22 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - name: Download result for job
-        uses: actions/download-artifact@v2
+      - name: Cache pip
+        uses: actions/cache@v2
         with:
-          name: cache-pip
           path: .cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+            ${{ runner.os }}-
 
       - name: Build Docker Image
         run: |
           docker build -t testimage:latest .
+
+      - name: Copy cache
+        working-directory: .cache
+        run: |
+          docker run -d --entrypoint /bin/sleep --name cache testimage:latest 300
+          docker cp cache:/root/.cache/pip .
+          docker kill cache
