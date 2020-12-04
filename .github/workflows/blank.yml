@@ -8,13 +8,15 @@ on:
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
   make-cache:
-    runs-on: python:3.7-alpine
+    runs-on: ubuntu-18.04
     timeout-minutes: 900
 
     steps:
-      - name: Install git
-        run: apk add --no-cache git
       - uses: actions/checkout@v2
+      - name: Set up Python 3.7
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.7
       - name: Cache pip
         uses: actions/cache@v2
         with:
