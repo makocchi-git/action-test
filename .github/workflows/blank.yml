@@ -1,0 +1,50 @@
+name: Build image test
+
+on:
+  push:
+    branches:
+      - main
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  make-cache:
+    runs-on: python:3.7-alpine
+    timeout-minutes: 900
+
+    steps:
+      - name: Install git
+        run: apk add --no-cache git
+      - uses: actions/checkout@v2
+      - name: Cache pip
+        uses: actions/cache@v2
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+            ${{ runner.os }}-
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Archive Pip Cache
+        uses: actions/upload-artifact@v2
+        with:
+          name: cache-pip
+          path: ~/.cache/pip
+
+  build-and-deploy:
+    needs: make-cache
+
+    runs-on: ubuntu-18.04
+    timeout-minutes: 600
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Download result for job
+        uses: actions/download-artifact@v2
+        with:
+          name: cache-pip
+
+      - name: Build Docker Image
+        run: |
+          docker build -t ${{ env.IMAGE }} .
